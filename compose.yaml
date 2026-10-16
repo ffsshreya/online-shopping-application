@@ -1,0 +1,10 @@
+
+services:
+  shopping-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: online-shopping-app
+    ports:
+      - "8080:80"
+    restart: unless-stopped
