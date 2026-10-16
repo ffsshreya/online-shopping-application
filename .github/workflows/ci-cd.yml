@@ -1,0 +1,76 @@
+
+name: Online Shopping CI-CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test-package:
+    name: Build, Test and Package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Build application
+        run: |
+          test -f index.html
+          test -f css/style.css
+          test -f js/script.js
+          mkdir -p dist
+          cp index.html dist/
+          cp -r css js dist/
+
+      - name: Run automated tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Package application
+        run: |
+          cd dist
+          zip -r ../online-shopping-application.zip .
+
+      - name: Upload ZIP package
+        uses: actions/upload-artifact@v4
+        with:
+          name: online-shopping-application
+          path: online-shopping-application.zip
+
+      - name: Prepare website for deployment
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build-test-package
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Deploy website
+        id: deployment
+        uses: actions/deploy-pages@v4
